@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import Sidebar from './components/Sidebar'
+import Overview from './components/Overview'
 import './App.css'
 
 function App() {
@@ -7,6 +8,7 @@ function App() {
     <div className="flex h-screen w-full bg-neutral-100">
       <Sidebar />
       <div className="flex-1 p-7">
+        <Overview />
       </div>
     </div>
   )
