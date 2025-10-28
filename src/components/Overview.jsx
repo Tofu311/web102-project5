@@ -29,7 +29,8 @@ const Overview = () => {
 
       const result = await response.json();
       const games = result.results || [];
-      console.log(games);
+      // console.log(games);
+      
       return games;
     } catch (error) {
       console.error(error);
@@ -43,10 +44,11 @@ const Overview = () => {
       {games.length === 0 ? (
         <p>Loading...</p>
       ) : (
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 bg-gray-50">
           {games.map((game) => {
             const ratingMean =
               game.rating?.mean ?? (typeof game.rating === 'number' ? game.rating : null);
+            const ratingDisplay = (ratingMean * 10).toFixed(2);
             const ratingCount = game.rating?.count ?? null;
             // some entries use `image`, some `screenshots` (array)
             const image =
@@ -74,7 +76,7 @@ const Overview = () => {
                   <p className="text-sm text-gray-600">Genre: {game.genre ?? 'N/A'}</p>
                   <p className="text-sm text-gray-600">
                     Rating:{' '}
-                    {ratingMean !== null ? ratingMean : 'N/A'}
+                    {ratingMean !== null ? `${ratingDisplay} / 10` : 'N/A'}
                     {ratingCount ? ` (${Math.round(ratingCount)} ratings)` : ''}
                   </p>
                 </div>
