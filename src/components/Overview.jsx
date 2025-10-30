@@ -2,9 +2,18 @@ import { useState, useEffect } from 'react';
 
 const API_KEY = import.meta.env.VITE_API_KEY;
 
+const PLATFORMS = [
+  { id: 'pc', label: 'PC' },
+  { id: 'xbox', label: 'Xbox' },
+  { id: 'playstation', label: 'PlayStation' },
+  { id: 'switch', label: 'Nintendo Switch' },
+  { id: 'mobile', label: 'Mobile' },
+];
+
 const Overview = () => {
   const [games, setGames] = useState([]);
   const [search, setSearch] = useState('');
+  const [selectedPlatforms, setSelectedPlatforms] = useState([]);
 
   useEffect(() => {
     // fetch initial list
@@ -15,15 +24,31 @@ const Overview = () => {
     fetchGames();
   }, []);
 
-  // Will fetch the top 10 most popular games or run a query when provided
-  const getGames = async (query = '') => {
+  // Will fetch games; if query is provided, we can also attach platform filters
+  const getGames = async (query = '', platforms = []) => {
     const base = 'https://api.gamebrain.co/v1/games';
-    const url = query ? `${base}?query=${encodeURIComponent(query)}` : base;
+    let url = base;
+
+    if (query) {
+      url += `?query=${encodeURIComponent(query)}`;
+    }
+
+    if (platforms && platforms.length > 0) {
+      // API expects filters as JSON in the `filters` query param.
+      const filters = [
+        {
+          key: 'platform',
+          values: platforms.map((p) => ({ value: p })),
+        },
+      ];
+      const joiner = url.includes('?') ? '&' : '?';
+      url += `${joiner}filters=${encodeURIComponent(JSON.stringify(filters))}`;
+    }
 
     try {
       const response = await fetch(url, {
         method: 'GET',
-        headers: { 'x-api-key': API_KEY }
+        headers: { 'x-api-key': API_KEY },
       });
       if (!response.ok) throw new Error(`Response status: ${response.status}`);
       const result = await response.json();
@@ -38,8 +63,14 @@ const Overview = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const term = (search || '').trim();
-    const results = await getGames(term);
+    const results = await getGames(term, term ? selectedPlatforms : []);
     setGames(results);
+  };
+
+  const togglePlatform = (id) => {
+    setSelectedPlatforms((prev) =>
+      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
+    );
   };
 
   return (
@@ -55,13 +86,37 @@ const Overview = () => {
             placeholder="Search for Games"
             aria-label="Search for games"
           />
+
+          {/* show filters only when there's a search term */}
+          {search.trim().length > 0 && (
+            <fieldset className="mb-2 border border-gray-200 p-3 rounded">
+              <legend className="text-sm font-medium mb-2">Filter by platform</legend>
+              <div className="flex flex-wrap gap-2">
+                {PLATFORMS.map((p) => (
+                  <label key={p.id} className="inline-flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedPlatforms.includes(p.id)}
+                      onChange={() => togglePlatform(p.id)}
+                      className="form-checkbox"
+                    />
+                    <span className="text-sm">{p.label}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          )}
+
           <div className="flex gap-2">
-            <button type="submit" className="px-3 py-1 bg-black text-white rounded">Search</button>
+            <button type="submit" className="px-3 py-1 bg-black text-white rounded">
+              Search
+            </button>
             <button
               type="button"
               className="px-3 py-1 bg-black text-white border rounded"
               onClick={async () => {
                 setSearch('');
+                setSelectedPlatforms([]);
                 const all = await getGames();
                 setGames(all);
               }}
@@ -90,11 +145,7 @@ const Overview = () => {
             return (
               <article key={game.id} className="bg-white rounded-lg shadow-sm overflow-hidden">
                 {image ? (
-                  <img
-                    src={image}
-                    alt={game.name ?? 'game'}
-                    className="w-full h-48 object-cover"
-                  />
+                  <img src={image} alt={game.name ?? 'game'} className="w-full h-48 object-cover" />
                 ) : (
                   <div className="w-full h-48 bg-gray-200 flex items-center justify-center text-sm text-gray-500">
                     No image
